@@ -9,12 +9,12 @@
   <!-- Maintainer and author information -->
   <maintainer email="oppa.ai.org@gmail.com">OppaAI</maintainer>
   <author email="oppa.ai.org@gmail.com">OppaAI</author>
-  <license file="LICENSE">GPL-3.0-only</license>
+  <license file="LICENSE">AGPL-3.0-only</license>
 
   <!-- Repository URLs -->
-  <url type="website">https://github.com/OppaAI/AGi</url>
-  <url type="repository">https://github.com/OppaAI/AGi/tree/main/robot/src/vcs</url>
-  <url type="bugtracker">https://github.com/OppaAI/AGi/issues</url>
+  <url type="website">https://github.com/AGi-robot/cypher</url>
+  <url type="repository">https://github.com/AGi-robot/cypher</url>
+  <url type="bugtracker">https://github.com/AGi-robot/cypher/issues</url>
 
   <!-- Build tool dependencies -->
   <buildtool_depend>ament_cmake</buildtool_depend>
