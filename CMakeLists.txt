@@ -32,6 +32,10 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_python_install_package(${PROJECT_NAME})
+ament_get_python_install_dir(PYTHON_INSTALL_DIR)
+install(
+  FILES cryptic_signal_core/telepathic_encoding.py
+  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+)
 
 ament_package()
