@@ -14,6 +14,8 @@ TRITS_PER_BYTE = 6
 TRITS_PER_PACKED_BYTE = 5
 BASE = 3
 MAX_PACKED_VALUE = BASE**TRITS_PER_PACKED_BYTE - 1
+BYTE_TRIT_DIVISORS = tuple(BASE**i for i in reversed(range(TRITS_PER_BYTE)))
+PACKED_TRIT_DIVISORS = tuple(BASE**i for i in reversed(range(TRITS_PER_PACKED_BYTE)))
 
 
 def encode_text(text: str) -> tuple[bytes, int]:
@@ -25,26 +27,20 @@ def encode_text(text: str) -> tuple[bytes, int]:
     if not isinstance(text, str):
         raise TypeError("text must be a string")
 
-    trits: list[int] = []
-    for byte in text.encode("utf-8"):
-        digits = [0] * TRITS_PER_BYTE
-        value = byte
-        for index in range(TRITS_PER_BYTE - 1, -1, -1):
-            value, digits[index] = divmod(value, BASE)
-        if value:
-            raise ValueError("UTF-8 byte does not fit the six-trit encoding")
-        trits.extend(digits)
-
+    original = text.encode("utf-8")
     packed = bytearray()
-    for start in range(0, len(trits), TRITS_PER_PACKED_BYTE):
-        group = trits[start : start + TRITS_PER_PACKED_BYTE]
-        group.extend([0] * (TRITS_PER_PACKED_BYTE - len(group)))
-        value = 0
-        for digit in group:
+    value = used = 0
+    for byte in original:
+        for divisor in BYTE_TRIT_DIVISORS:
+            digit, byte = divmod(byte, divisor)
             value = value * BASE + digit
-        packed.append(value)
-
-    return bytes(packed), len(trits)
+            used += 1
+            if used == TRITS_PER_PACKED_BYTE:
+                packed.append(value)
+                value = used = 0
+    if used:
+        packed.append(value * BASE ** (TRITS_PER_PACKED_BYTE - used))
+    return bytes(packed), len(original) * TRITS_PER_BYTE
 
 
 def decode_text(packed_signal: Iterable[int], symbol_count: int) -> str:
@@ -58,28 +54,26 @@ def decode_text(packed_signal: Iterable[int], symbol_count: int) -> str:
     expected_length = (symbol_count + TRITS_PER_PACKED_BYTE - 1) // TRITS_PER_PACKED_BYTE
     if len(packed) != expected_length:
         raise ValueError("packed signal length does not match symbol_count")
-    if any(value > MAX_PACKED_VALUE for value in packed):
-        raise ValueError("packed signal contains an invalid base-3 group")
-
-    trits: list[int] = []
-    for value in packed:
-        group = [0] * TRITS_PER_PACKED_BYTE
-        for index in range(TRITS_PER_PACKED_BYTE - 1, -1, -1):
-            value, group[index] = divmod(value, BASE)
-        trits.extend(group)
-
-    if any(trits[symbol_count:]):
-        raise ValueError("packed signal has non-zero trailing padding")
-    trits = trits[:symbol_count]
-
     decoded = bytearray()
-    for start in range(0, len(trits), TRITS_PER_BYTE):
-        value = 0
-        for digit in trits[start : start + TRITS_PER_BYTE]:
-            value = value * BASE + digit
-        if value > 0xFF:
-            raise ValueError("ternary group is outside the UTF-8 byte range")
-        decoded.append(value)
+    remaining = symbol_count
+    byte = used = 0
+    for value in packed:
+        if value > MAX_PACKED_VALUE:
+            raise ValueError("packed signal contains an invalid base-3 group")
+        for divisor in PACKED_TRIT_DIVISORS:
+            digit, value = divmod(value, divisor)
+            if not remaining:
+                if digit:
+                    raise ValueError("packed signal has non-zero trailing padding")
+                continue
+            remaining -= 1
+            byte = byte * BASE + digit
+            used += 1
+            if used == TRITS_PER_BYTE:
+                if byte > 0xFF:
+                    raise ValueError("ternary group is outside the UTF-8 byte range")
+                decoded.append(byte)
+                byte = used = 0
 
     try:
         return decoded.decode("utf-8")
