@@ -13,6 +13,10 @@ Shared ROS 2 message definitions and text encoding for AGi systems. The package 
 
 Add this repository to a ROS 2 workspace alongside the packages that depend on it, then run:
 
+For AIVA's integrated workspace, the ROS installation path is configured by
+`paths.ros_setup` in [AIVA's spec](../spec.yaml); `/opt/ros/jazzy/setup.bash`
+is the default.
+
 ```sh
 source /opt/ros/jazzy/setup.bash
 colcon build --packages-up-to cryptic_signal_core
